@@ -1,0 +1,37 @@
+services:
+  web-demo:
+    build:
+      context: ../.
+      dockerfile: ./docker/Dockerfile
+    image: web-demo:tag
+    container_name: web-demo
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=https://+:443;http://+:80
+      - ConnectionStrings__DbConnection=${MSSQL_CONNECTIONSTRING}
+      - ConnectionStrings__RabbitMQConnection=${RABBITMQ_CONNECTIONSTRING}
+      - IOBox__Inboxes__0__Database__ConnectionString=${MSSQL_CONNECTIONSTRING}
+      - IOBox__Inboxes__0__Database__DefaultConnectionString=${MSSQL_DEFAULTCONNECTIONSTRING}
+      - IOBox__Inboxes__1__Database__ConnectionString=${MSSQL_CONNECTIONSTRING}
+      - IOBox__Inboxes__1__Database__DefaultConnectionString=${MSSQL_DEFAULTCONNECTIONSTRING}
+      - IOBox__Outboxes__0__Database__ConnectionString=${MSSQL_CONNECTIONSTRING}
+      - IOBox__Outboxes__0__Database__DefaultConnectionString=${MSSQL_DEFAULTCONNECTIONSTRING}
+      - IOBox__Outboxes__1__Database__ConnectionString=${MSSQL_CONNECTIONSTRING}
+      - IOBox__Outboxes__1__Database__DefaultConnectionString=${MSSQL_DEFAULTCONNECTIONSTRING}
+      - ASPNETCORE_Kestrel__Certificates__Default__Password=${CERT_PASSWORD}
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx
+    ports:
+      - 44300:443
+    volumes:
+      - ${APPDATA}/ASP.NET/Https/aspnetapp.pfx:/https/aspnetapp.pfx:ro
+    depends_on:
+      mssql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - iobox
+
+networks:
+  iobox:
+    external: false
