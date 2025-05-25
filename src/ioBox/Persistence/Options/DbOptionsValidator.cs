@@ -32,8 +32,7 @@ class DbOptionsValidator(IOptionsMonitor<ArchiveOptions> archiveOptionsMonitor) 
                 $"{nameof(DbOptions.DatabaseName)} must have a non-empty value.");
         }
 
-        if (options.CreateSchemaIfNotExists &&
-            string.IsNullOrWhiteSpace(options.SchemaName))
+        if (string.IsNullOrWhiteSpace(options.SchemaName))
         {
             return ValidateOptionsResult.Fail(
                 $"{name} - {nameof(DbOptions)}." +

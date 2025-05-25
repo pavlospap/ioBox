@@ -74,8 +74,6 @@ class SqlServerDbMigrator(
 
         var schemaName = options.SchemaName;
 
-        var fullTableName = schemaName + "." + tableName;
-
         var sql =
             "SELECT 1 FROM sys.tables " +
             "WHERE name = @tableName AND schema_id = SCHEMA_ID(@schemaName);";
@@ -88,6 +86,8 @@ class SqlServerDbMigrator(
         {
             return;
         }
+
+        var fullTableName = schemaName + "." + tableName;
 
         sql = $@"
             CREATE TABLE {fullTableName} (

@@ -439,8 +439,6 @@ class SqlServerDbStore(
     {
         var options = dbOptionsMonitor.Get(ioName);
 
-        return string.IsNullOrWhiteSpace(options.SchemaName)
-            ? options.TableName
-            : options.SchemaName + "." + options.TableName;
+        return options.SchemaName + "." + options.TableName;
     }
 }

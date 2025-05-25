@@ -18,23 +18,27 @@ public class DbOptions
     /// creating the database when <see cref="CreateDatabaseIfNotExists"/> is <c>true</c>.
     /// For example, this can point to the <c>master</c> database in SQL Server or 
     /// the <c>postgres</c> database in PostgreSQL.
-    /// This value is required if database creation is enabled.
+    /// This property is required if database creation is enabled.
     /// </summary>
     public string? DefaultConnectionString { get; set; }
 
     /// <summary>
-    /// The name of the database to create if it doesn't already exist and 
-    /// <see cref="CreateDatabaseIfNotExists"/> is set to <c>true</c>.
-    /// This property is required when database creation is enabled.
+    /// The name of the database to use.
+    /// If the specified database does not exist and <see cref="CreateDatabaseIfNotExists"/> 
+    /// is set to <c>true</c> it will be created automatically.
+    /// This property is required if database creation is enabled.
     /// </summary>
     public string? DatabaseName { get; set; }
 
     /// <summary>
-    /// The name of the schema to create if it doesn't already exist and 
-    /// <see cref="CreateSchemaIfNotExists"/> is set to <c>true</c>.
-    /// This property is required when schema creation is enabled.
+    /// The name of the database schema to use. This property is required.
+    /// If the specified schema does not exist and <see cref="CreateSchemaIfNotExists"/> 
+    /// is set to <c>true</c> it will be created automatically.
+    /// To use the default schema (e.g., <c>dbo</c> for SQL Server or <c>public</c> 
+    /// for PostgreSQL), explicitly provide its name instead of leaving this value 
+    /// null or empty.
     /// </summary>
-    public string? SchemaName { get; set; }
+    public string SchemaName { get; set; } = null!;
 
     /// <summary>
     /// The name of the table used for storing messages.
