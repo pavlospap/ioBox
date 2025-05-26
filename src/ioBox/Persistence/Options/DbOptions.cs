@@ -48,12 +48,8 @@ public class DbOptions
 
     /// <summary>
     /// If specified, archived messages will be stored in this table as long as 
-    /// <see cref="Workers.Archive.Options.ArchiveOptions.Enabled"/> is <c>true</c>
-    /// and either <see cref="Workers.Archive.Options.ArchiveOptions.ProcessedMessageTtl"/> 
-    /// or <see cref="Workers.Archive.Options.ArchiveOptions.ExpiredMessageTtl"/> 
-    /// has a value.
-    /// This property becomes mandatory when archiving is enabled and at least one
-    /// TTL setting is defined.
+    /// <see cref="Workers.Archive.Options.ArchiveOptions.Enabled"/> is <c>true</c>.
+    /// This property becomes mandatory when archiving is enabled.
     /// </summary>
     public string? ArchiveTableName { get; set; } = null!;
 

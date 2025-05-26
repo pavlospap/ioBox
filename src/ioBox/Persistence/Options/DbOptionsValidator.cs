@@ -49,8 +49,6 @@ class DbOptionsValidator(IOptionsMonitor<ArchiveOptions> archiveOptionsMonitor) 
         var archiveOptions = archiveOptionsMonitor.Get(name!);
 
         if (archiveOptions.Enabled &&
-            (archiveOptions.ProcessedMessageTtl.HasValue ||
-             archiveOptions.ExpiredMessageTtl.HasValue) &&
             string.IsNullOrWhiteSpace(options.ArchiveTableName))
         {
             return ValidateOptionsResult.Fail(

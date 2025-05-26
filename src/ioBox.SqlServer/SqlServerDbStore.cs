@@ -4,6 +4,7 @@ using Dapper;
 
 using IOBox.Persistence;
 using IOBox.Persistence.Options;
+using IOBox.Workers.Archive.Options;
 using IOBox.Workers.Delete.Options;
 using IOBox.Workers.Expire.Options;
 using IOBox.Workers.Poll.Options;
@@ -24,6 +25,7 @@ class SqlServerDbStore(
     IOptionsMonitor<RetryPollOptions> retryPollOptionsMonitor,
     IOptionsMonitor<UnlockOptions> unlockOptionsMonitor,
     IOptionsMonitor<ExpireOptions> expireOptionsMonitor,
+    IOptionsMonitor<ArchiveOptions> archiveOptionsMonitor,
     IOptionsMonitor<DeleteOptions> deleteOptionsMonitor) : IDbStore
 {
     const byte New = 1;
@@ -109,13 +111,13 @@ class SqlServerDbStore(
         var size = pollOptionsMonitor.Get(ioName).BatchSize;
 
         var sql = $@"
-            WITH CTE AS ( 
+            WITH NewMessages AS ( 
                 SELECT TOP ({size}) * 
                 FROM {TableName(ioName)} WITH (ROWLOCK, UPDLOCK, READPAST) 
                 WHERE Status = {New} 
                 ORDER BY ReceivedAt 
             ) 
-            UPDATE CTE 
+            UPDATE NewMessages 
             SET 
                 Status = {Locked}, 
                 LockedAt = SYSUTCDATETIME() 
@@ -157,7 +159,7 @@ class SqlServerDbStore(
         var limit = retryPollOptions.Limit;
 
         var sql = $@"
-            WITH CTE AS ( 
+            WITH FailedMessages AS ( 
                 SELECT TOP ({size}) * 
                 FROM {TableName(ioName)} WITH (ROWLOCK, UPDLOCK, READPAST) 
                 WHERE 
@@ -165,7 +167,7 @@ class SqlServerDbStore(
                     Retries < {limit} 
                 ORDER BY FailedAt 
             ) 
-            UPDATE CTE 
+            UPDATE FailedMessages 
             SET 
                 Status = {Locked}, 
                 LockedAt = SYSUTCDATETIME(), 
@@ -294,7 +296,7 @@ class SqlServerDbStore(
         var timeout = unlockOptionsMonitor.Get(ioName).Timeout;
 
         var sql = $@"
-            WITH CTE AS ( 
+            WITH LockedMessages AS ( 
                 SELECT TOP ({size}) * 
                 FROM {TableName(ioName)} WITH (ROWLOCK, UPDLOCK, READPAST) 
                 WHERE 
@@ -302,7 +304,7 @@ class SqlServerDbStore(
                     LockedAt <= DATEADD(MILLISECOND, -{timeout}, SYSUTCDATETIME()) 
                 ORDER BY LockedAt 
             ) 
-            UPDATE CTE 
+            UPDATE LockedMessages 
             SET 
                 Status = {Failed}, 
                 FailedAt = SYSUTCDATETIME(), 
@@ -342,7 +344,7 @@ class SqlServerDbStore(
         var limit = retryPollOptionsMonitor.Get(ioName).Limit;
 
         var sql = $@"
-            WITH CTE AS ( 
+            WITH MessagesToExpire AS ( 
                 SELECT TOP ({size}) * 
                 FROM {TableName(ioName)} WITH (ROWLOCK, UPDLOCK, READPAST) 
                 WHERE 
@@ -356,7 +358,7 @@ class SqlServerDbStore(
                         WHEN Status = {Failed} THEN FailedAt
                     END
             ) 
-            UPDATE CTE 
+            UPDATE MessagesToExpire 
             SET 
                 Status = {Expired}, 
                 ExpiredAt = SYSUTCDATETIME();";
@@ -378,13 +380,86 @@ class SqlServerDbStore(
         transaction.Commit();
     }
 
-    public Task ArchiveMessagesAsync(
+    public async Task ArchiveMessagesAsync(
         string ioName,
         CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrEmpty(ioName, nameof(ioName));
 
-        return Task.CompletedTask;
+        var archiveOptions = archiveOptionsMonitor.Get(ioName);
+
+        var size = archiveOptions.BatchSize;
+
+        var expiredTtl = archiveOptions.ExpiredMessageTtl;
+
+        var processedTtl = archiveOptions.ProcessedMessageTtl;
+
+        var dbOptions = dbOptionsMonitor.Get(ioName);
+
+        var archiveTableName = dbOptions.SchemaName + "." + dbOptions.ArchiveTableName;
+
+        var sql = $@"
+            DECLARE @MessagesToArchive TABLE (Id int);
+
+            INSERT INTO @MessagesToArchive (Id)
+            SELECT TOP ({size}) Id 
+            FROM {TableName(ioName)} WITH (ROWLOCK, UPDLOCK, READPAST) 
+            WHERE 
+                (Status = {Processed} AND 
+                    ProcessedAt <= DATEADD(MILLISECOND, -{processedTtl}, SYSUTCDATETIME())) OR
+                (Status = {Expired} AND 
+                    ExpiredAt <= DATEADD(MILLISECOND, -{expiredTtl}, SYSUTCDATETIME()))
+            ORDER BY 
+                CASE 
+                    WHEN Status = {Processed} THEN ProcessedAt
+                    WHEN Status = {Expired} THEN ExpiredAt
+                END;
+            
+            INSERT INTO {archiveTableName} (
+                MessageId,
+                Message,
+                ContextInfo,
+                Status,
+                Retries,
+                Error,
+                ReceivedAt,
+                LockedAt,
+                ProcessedAt,
+                FailedAt,
+                ExpiredAt)
+            SELECT
+                MessageId,
+                Message,
+                ContextInfo,
+                Status,
+                Retries,
+                Error,
+                ReceivedAt,
+                LockedAt,
+                ProcessedAt,
+                FailedAt,
+                ExpiredAt
+            FROM {TableName(ioName)}
+            WHERE Id IN (SELECT Id FROM @MessagesToArchive);
+
+            DELETE FROM {TableName(ioName)}
+            WHERE Id IN (SELECT Id FROM @MessagesToArchive);";
+
+        using var connection = dbContext.CreateConnection(ioName);
+
+        connection.Open();
+
+        using var transaction = connection.BeginTransaction(
+            IsolationLevel.ReadCommitted);
+
+        var command = new CommandDefinition(
+            sql,
+            transaction: transaction,
+            cancellationToken: cancellationToken);
+
+        await connection.ExecuteAsync(command);
+
+        transaction.Commit();
     }
 
     public async Task DeleteMessagesAsync(
@@ -402,7 +477,7 @@ class SqlServerDbStore(
         var processedTtl = deleteOptions.ProcessedMessageTtl;
 
         var sql = $@"
-            WITH CTE AS ( 
+            WITH MessagesToDelete AS ( 
                 SELECT TOP ({size}) * 
                 FROM {TableName(ioName)} WITH (ROWLOCK, UPDLOCK, READPAST) 
                 WHERE 
@@ -416,7 +491,7 @@ class SqlServerDbStore(
                         WHEN Status = {Expired} THEN ExpiredAt
                     END
             ) 
-            DELETE FROM CTE;";
+            DELETE FROM MessagesToDelete;";
 
         using var connection = dbContext.CreateConnection(ioName);
 

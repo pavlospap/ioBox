@@ -2,6 +2,7 @@
 
 using IOBox.Persistence;
 using IOBox.Persistence.Options;
+using IOBox.Workers.Archive.Options;
 
 using Microsoft.Extensions.Options;
 
@@ -9,28 +10,35 @@ namespace IOBox.SqlServer;
 
 class SqlServerDbMigrator(
     IDbContext dbContext,
-    IOptionsMonitor<DbOptions> dbOptionsMonitor) : IDbMigrator
+    IOptionsMonitor<DbOptions> dbOptionsMonitor,
+    IOptionsMonitor<ArchiveOptions> archiveOptionsMonitor) : IDbMigrator
 {
     public void MigrateDb(string ioName)
     {
-        CreateDb(ioName);
+        var dbOptions = dbOptionsMonitor.Get(ioName);
 
-        CreateSchema(ioName);
-
-        CreateTable(ioName);
-    }
-
-    void CreateDb(string ioName)
-    {
-        var options = dbOptionsMonitor.Get(ioName);
-
-        if (!options.CreateDatabaseIfNotExists)
+        if (dbOptions.CreateDatabaseIfNotExists)
         {
-            return;
+            CreateDb(dbOptions.DatabaseName!, ioName);
         }
 
-        var name = options.DatabaseName;
+        if (dbOptions.CreateSchemaIfNotExists)
+        {
+            CreateSchema(dbOptions.SchemaName, ioName);
+        }
 
+        CreateTable(dbOptions.TableName, dbOptions.SchemaName, ioName);
+
+        var archiveOptions = archiveOptionsMonitor.Get(ioName);
+
+        if (archiveOptions.Enabled)
+        {
+            CreateTable(dbOptions.ArchiveTableName!, dbOptions.SchemaName, ioName);
+        }
+    }
+
+    void CreateDb(string name, string ioName)
+    {
         var sql = "SELECT 1 FROM sys.databases WHERE name = @name;";
 
         using var connection = dbContext.CreateDefaultConnection(ioName);
@@ -43,17 +51,8 @@ class SqlServerDbMigrator(
         }
     }
 
-    void CreateSchema(string ioName)
+    void CreateSchema(string name, string ioName)
     {
-        var options = dbOptionsMonitor.Get(ioName);
-
-        if (!options.CreateSchemaIfNotExists)
-        {
-            return;
-        }
-
-        var name = options.SchemaName;
-
         var sql = "SELECT 1 FROM sys.schemas WHERE name = @name;";
 
         using var connection = dbContext.CreateConnection(ioName);
@@ -66,14 +65,8 @@ class SqlServerDbMigrator(
         }
     }
 
-    void CreateTable(string ioName)
+    void CreateTable(string tableName, string schemaName, string ioName)
     {
-        var options = dbOptionsMonitor.Get(ioName);
-
-        var tableName = options.TableName;
-
-        var schemaName = options.SchemaName;
-
         var sql =
             "SELECT 1 FROM sys.tables " +
             "WHERE name = @tableName AND schema_id = SCHEMA_ID(@schemaName);";
