@@ -27,13 +27,21 @@ class SqlServerDbMigrator(
             CreateSchema(dbOptions.SchemaName, ioName);
         }
 
-        CreateTable(dbOptions.TableName, dbOptions.SchemaName, ioName);
+        CreateTable(
+            dbOptions.SchemaName,
+            dbOptions.TableName,
+            dbOptions.FullTableName,
+            ioName);
 
         var archiveOptions = archiveOptionsMonitor.Get(ioName);
 
         if (archiveOptions.Enabled)
         {
-            CreateTable(dbOptions.ArchiveTableName!, dbOptions.SchemaName, ioName);
+            CreateTable(
+                dbOptions.SchemaName,
+                dbOptions.ArchiveTableName!,
+                dbOptions.ArchiveFullTableName!,
+                ioName);
         }
     }
 
@@ -65,7 +73,11 @@ class SqlServerDbMigrator(
         }
     }
 
-    void CreateTable(string tableName, string schemaName, string ioName)
+    void CreateTable(
+        string schemaName,
+        string tableName,
+        string fullTableName,
+        string ioName)
     {
         var sql =
             "SELECT 1 FROM sys.tables " +
@@ -79,8 +91,6 @@ class SqlServerDbMigrator(
         {
             return;
         }
-
-        var fullTableName = schemaName + "." + tableName;
 
         sql = $@"
             CREATE TABLE {fullTableName} (

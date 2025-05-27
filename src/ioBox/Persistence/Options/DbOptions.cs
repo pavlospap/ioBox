@@ -64,4 +64,29 @@ public class DbOptions
     /// schema if it doesn't already exist.
     /// </summary>
     public bool CreateSchemaIfNotExists { get; set; }
+
+    /// <summary>
+    /// Gets the fully qualified table name in the format <c>SchemaName.TableName</c>.
+    /// This combines the <see cref="SchemaName"/> and <see cref="TableName"/> 
+    /// properties into a single string suitable for use in SQL queries.
+    /// </summary>
+    public string FullTableName => SchemaName + "." + TableName;
+
+    /// <summary>
+    /// Gets the fully qualified table name for archived messages in the format 
+    /// <c>SchemaName.ArchiveTableName</c>.
+    /// This combines the <see cref="SchemaName"/> and <see cref="ArchiveTableName"/> 
+    /// properties into a single string suitable for use in SQL queries.
+    /// This will be <c>null</c> if <see cref="ArchiveTableName"/> is not set or 
+    /// is empty.
+    /// </summary>
+    public string? ArchiveFullTableName
+    {
+        get
+        {
+            return string.IsNullOrWhiteSpace(ArchiveTableName)
+                ? null
+                : SchemaName + "." + ArchiveTableName;
+        }
+    }
 }
