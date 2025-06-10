@@ -19,9 +19,16 @@ public static class Request
     /// <param name="app">The <see cref="WebApplication"/> instance.</param>
     /// <param name="configuration">The application configuration.</param>
     /// <returns>The same <see cref="WebApplication"/> instance for chaining.</returns>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown if <paramref name="app"/> or <paramref name="configuration"/> is <c>null</c>.
+    /// </exception>
     public static WebApplication UseIOBox(
         this WebApplication app, IConfiguration configuration)
     {
+        ArgumentNullException.ThrowIfNull(app, nameof(app));
+
+        ArgumentNullException.ThrowIfNull(configuration, nameof(configuration));
+
         var names = configuration.GetAllInboxOutboxSections()
             .Select(s => s.GetValue<string>("Name")!);
 

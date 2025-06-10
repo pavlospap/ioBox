@@ -28,10 +28,12 @@ public static class Services
     /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
     /// <param name="configuration">The application configuration.</param>
     /// <returns>The updated <see cref="IServiceCollection"/> instance.</returns>
-    /// <exception cref="ArgumentNullException">Thrown if <paramref name="services"/> or 
-    /// <paramref name="configuration"/> is <c>null</c>.</exception>
-    /// <exception cref="ArgumentException">Thrown if no inboxes or outboxes are 
-    /// defined, or if names are missing or duplicated.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown if <paramref name="services"/> or <paramref name="configuration"/> is <c>null</c>.
+    /// </exception>
+    /// <exception cref="ArgumentException">
+    /// Thrown if no inboxes or outboxes are defined, or if names are missing or duplicated.
+    /// </exception>
     public static IServiceCollection AddIOBox(
         this IServiceCollection services, IConfiguration configuration)
     {
