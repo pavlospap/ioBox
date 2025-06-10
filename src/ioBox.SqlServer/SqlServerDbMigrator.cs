@@ -2,7 +2,6 @@
 
 using IOBox.Persistence;
 using IOBox.Persistence.Options;
-using IOBox.Workers.Archive.Options;
 
 using Microsoft.Extensions.Options;
 
@@ -10,8 +9,7 @@ namespace IOBox.SqlServer;
 
 class SqlServerDbMigrator(
     IDbContext dbContext,
-    IOptionsMonitor<DbOptions> dbOptionsMonitor,
-    IOptionsMonitor<ArchiveOptions> archiveOptionsMonitor) : IDbMigrator
+    IOptionsMonitor<DbOptions> dbOptionsMonitor) : IDbMigrator
 {
     public void MigrateDb(string ioName)
     {
@@ -33,9 +31,7 @@ class SqlServerDbMigrator(
             dbOptions.FullTableName,
             ioName);
 
-        var archiveOptions = archiveOptionsMonitor.Get(ioName);
-
-        if (archiveOptions.Enabled)
+        if (!string.IsNullOrWhiteSpace(dbOptions.ArchiveTableName))
         {
             CreateTable(
                 dbOptions.SchemaName,

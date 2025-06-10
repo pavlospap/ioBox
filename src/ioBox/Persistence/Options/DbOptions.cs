@@ -47,9 +47,9 @@ public class DbOptions
     public string TableName { get; set; } = null!;
 
     /// <summary>
-    /// If specified, archived messages will be stored in this table as long as 
-    /// <see cref="Workers.Archive.Options.ArchiveOptions.Enabled"/> is <c>true</c>.
-    /// This property becomes mandatory when archiving is enabled.
+    /// If specified, the table will be created and used to store archived messages 
+    /// when <see cref="Workers.Archive.Options.ArchiveOptions.Enabled"/> is <c>true</c>.
+    /// This property is required when archiving is enabled.
     /// </summary>
     public string? ArchiveTableName { get; set; } = null!;
 
