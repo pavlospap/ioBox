@@ -1,3 +1,0 @@
-networks:
-  iobox:
-    driver: bridge

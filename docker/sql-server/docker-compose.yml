@@ -1,0 +1,71 @@
+services:
+
+  iobox-web-demo-sql-server:
+    build:
+      context: ../../.
+      dockerfile: ./docker/sql-server/Dockerfile
+    image: iobox-web-demo-sql-server:tag
+    container_name: iobox-web-demo-sql-server
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=https://+:443;http://+:80
+      - ASPNETCORE_Kestrel__Certificates__Default__Password=${CERT_PASSWORD}
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/${CERT_NAME}
+      - ConnectionStrings__DbConnection=${MSSQL_CONNECTIONSTRING}
+      - ConnectionStrings__RabbitMQConnection=${RABBITMQ_CONNECTIONSTRING}
+      - IOBox__Inboxes__0__Database__ConnectionString=${MSSQL_CONNECTIONSTRING}
+      - IOBox__Inboxes__0__Database__DefaultConnectionString=${MSSQL_DEFAULTCONNECTIONSTRING}
+      - IOBox__Inboxes__1__Database__ConnectionString=${MSSQL_CONNECTIONSTRING}
+      - IOBox__Inboxes__1__Database__DefaultConnectionString=${MSSQL_DEFAULTCONNECTIONSTRING}
+      - IOBox__Outboxes__0__Database__ConnectionString=${MSSQL_CONNECTIONSTRING}
+      - IOBox__Outboxes__0__Database__DefaultConnectionString=${MSSQL_DEFAULTCONNECTIONSTRING}
+      - IOBox__Outboxes__1__Database__ConnectionString=${MSSQL_CONNECTIONSTRING}
+      - IOBox__Outboxes__1__Database__DefaultConnectionString=${MSSQL_DEFAULTCONNECTIONSTRING}
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ${USERPROFILE}/${CERT_PATH}/${CERT_NAME}:/https/${CERT_NAME}:ro
+    depends_on:
+      mssql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - iobox
+
+  mssql:
+    image: mcr.microsoft.com/mssql/server:${MSSQL_TAG}
+    container_name: mssql
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=$MSSQL_SA_PASSWORD
+    ports:
+      - 1433:1433
+    healthcheck:
+      test: /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -Q "SELECT 1" -b -o /dev/null
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+    networks:
+      - iobox
+
+  rabbitmq:
+    image: rabbitmq:${RABBITMQ_TAG}
+    container_name: rabbitmq
+    ports:
+      - 5672:5672
+      - 15672:15672
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    networks:
+      - iobox
+      
+networks:
+  iobox:
+    driver: bridge

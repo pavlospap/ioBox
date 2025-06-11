@@ -14,7 +14,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "build", "build", "{38A09D73
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ioBox.SqlServer", "src\ioBox.SqlServer\ioBox.SqlServer.csproj", "{EEBE494F-7F88-411D-A6AC-6D844C59C6C1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ioBox.Web.Demo", "src\ioBox.Web.Demo\ioBox.Web.Demo.csproj", "{758D8E51-65D9-405D-BC63-7F8D5607CE68}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ioBox.Web.Demo.SqlServer", "src\ioBox.Web.Demo.SqlServer\ioBox.Web.Demo.SqlServer.csproj", "{758D8E51-65D9-405D-BC63-7F8D5607CE68}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

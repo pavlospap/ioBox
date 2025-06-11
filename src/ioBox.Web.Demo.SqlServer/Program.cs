@@ -7,7 +7,7 @@ using EasyNetQ;
 using IOBox;
 using IOBox.Persistence;
 using IOBox.SqlServer;
-using IOBox.Web.Demo;
+using IOBox.Web.Demo.SqlServer;
 
 using Microsoft.Data.SqlClient;
 

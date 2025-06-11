@@ -6,7 +6,7 @@ using IOBox.Persistence;
 
 using Microsoft.Data.SqlClient;
 
-namespace IOBox.Web.Demo;
+namespace IOBox.Web.Demo.SqlServer;
 
 class MessageProcessor(
     IBus bus,

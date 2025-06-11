@@ -2,7 +2,7 @@
 
 using IOBox.Persistence;
 
-namespace IOBox.Web.Demo;
+namespace IOBox.Web.Demo.SqlServer;
 
 public class MessageListener(
     IBus bus,

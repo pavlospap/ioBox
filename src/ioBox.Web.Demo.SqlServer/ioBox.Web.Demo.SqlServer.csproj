@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
 	<PropertyGroup>
-		<RootNamespace>IOBox.Web.Demo</RootNamespace>
+		<RootNamespace>IOBox.Web.Demo.SqlServer</RootNamespace>
 	</PropertyGroup>
 
 	<ItemGroup>

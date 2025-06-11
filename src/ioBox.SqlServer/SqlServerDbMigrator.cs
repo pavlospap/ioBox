@@ -105,7 +105,7 @@ class SqlServerDbMigrator(
             CONSTRAINT PK_{tableName} PRIMARY KEY CLUSTERED (Id));
 
             CREATE UNIQUE INDEX UX_{tableName}_MessageId 
-                ON {fullTableName}(MessageId);
+                ON {fullTableName} (MessageId);
 
             CREATE INDEX IX_{tableName}_ReceivedAt 
                 ON {fullTableName} (ReceivedAt)
